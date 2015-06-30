@@ -234,7 +234,7 @@
         }
 
         function reapplyHighlights()
-        {
+        {   
             for(var idx = 0; idx < highlighted_cache.length; idx++)
             {
                 $("#" + highlighted_cache[idx][0] + " * #" + highlighted_cache[idx][1] ).css({
@@ -247,13 +247,13 @@
         }
 
         function removeHighlight(div, id)
-        {
+        { 
             for(var idx = 0; idx < highlighted_cache.length; idx++)
             {
                 if(div == highlighted_cache[idx][0] && id == highlighted_cache[idx][1])
                 {
                     var removed = highlighted_cache.splice(idx, 1);
-                    var css = removed[0] == "vida-svg-wrapper" ?
+                    var css = removed[0][0] == "vida-svg-wrapper" ?
                         {
                             "fill": "#000000",
                             "stroke": "#000000",
@@ -266,7 +266,7 @@
                             "fill-opacity": "0.0",
                             "stroke-opacity": "0.0"
                         };
-                    $("#" + removed[0] + " * #" + removed[1] ).css(css);
+                    $("#" + removed[0][0] + " * #" + removed[0][1] ).css(css);
                     return;
                 }
             }
@@ -298,10 +298,19 @@
                 }
             }
 
-            if (id != drag_id[0]) drag_id.unshift( id ); // make sure we don't add it twice
-            //hide_id( "svg_output", drag_id[0] );
-            resetHighlights();
-            newHighlight( "vida-svg-overlay", drag_id[0] );
+            if (drag_id.indexOf(id) == -1) // make sure we don't add it twice
+            {
+                drag_id.unshift( id ); 
+                newHighlight( "vida-svg-overlay", drag_id[0] );
+            //    console.log("New note: This note was " + id);
+            //    console.log(drag_id);
+            }
+            else {
+            //    console.log("Removing note: This note was " + id + " at position " + drag_id.indexOf(id));
+                drag_id.splice( drag_id.indexOf(id), 1);
+            //    console.log(drag_id);
+                removeHighlight("vida-svg-overlay", id);
+            }
 
             var viewBoxSVG = $(t).closest("svg");
             var parentSVG = viewBoxSVG.parent().closest("svg")[0];
@@ -312,6 +321,12 @@
             var svgWidth = parseInt(parentSVG.getAttribute('width'));
             var pixPerPix = ((actualHeight / svgHeight) + (actualWidth / svgWidth)) / 2;
 
+/*            console.log("viewBoxSVG");
+            console.log(viewBoxSVG);
+            console.log("viewBoxSVG[0]");
+            console.log(viewBoxSVG[0]);
+            console.log(viewBoxSVG[1]);
+*/
             drag_start = {
                 "x": tx, 
                 "initY": e.pageY, 
@@ -337,7 +352,7 @@
                 "stroke-opacity": "0.0"
             });
 
-            // we use this to distinct from click (selection)
+            // we use this to distinguish from click (selection)
             dragging = true;
             editorAction = JSON.stringify({ action: 'drag', param: { elementId: drag_id[0], 
                 x: parseInt(drag_start.x),
@@ -345,7 +360,8 @@
             });
 
             settings.verovioWorker.postMessage(['edit', editorAction, settings.clickedPage, false]); 
-            removeHighlight( "vida-svg-overlay", drag_id[0] );  
+            removeHighlight( "vida-svg-overlay", drag_id[0] );
+            resetHighlights(); 
             newHighlight( "vida-svg-wrapper", drag_id[0] ); 
             e.preventDefault();
         };
@@ -357,7 +373,7 @@
             $(document).unbind("touchmove", mouseMoveListener);
             $(document).unbind("touchend", mouseUpListener);
             if (dragging) {
-                removeHighlight("vida-svg-overlay", drag_id[0]);
+                removeHighlight("vida-svg-wrapper", drag_id[0]);
                 delete this.__origin__; 
                 reloadPage( settings.clickedPage, true );
                 dragging = false; 
