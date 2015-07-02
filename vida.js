@@ -118,6 +118,8 @@
                 '</div>' +
                 //'<div class="vida-grid-toggle">Toggle to grid</div>' +
                 '<div class="vida-orientation-toggle">Toggle orientation</div>' +
+                '<div class="vida-critical-note-music">Add Critical Note (music)</div>' +
+                '<div class="vida-critical-note-lyric">Add Critical Note (lyric)</div>' +
                 '<div class="vida-next-page vida-direction-control"></div>' +
             '</div>' +
             '<div id="vida-svg-wrapper" class="vida-svg-object" style="z-index: 1; position:absolute;"></div>' +
@@ -214,7 +216,6 @@
                 settings.horizontallyOriented = 1;
                 $('.vida-direction-control').hide();
             }
-
             refreshVerovio();
         };
 
@@ -321,12 +322,6 @@
             var svgWidth = parseInt(parentSVG.getAttribute('width'));
             var pixPerPix = ((actualHeight / svgHeight) + (actualWidth / svgWidth)) / 2;
 
-/*            console.log("viewBoxSVG");
-            console.log(viewBoxSVG);
-            console.log("viewBoxSVG[0]");
-            console.log(viewBoxSVG[0]);
-            console.log(viewBoxSVG[1]);
-*/
             drag_start = {
                 "x": tx, 
                 "initY": e.pageY, 
@@ -528,6 +523,17 @@
                 $(".vida-zoom-in").css('visibility', 'visible');
             }
         });
+
+        $(".vida-critical-note-music").on('click', function()
+        {
+        //    console.log(drag_id);
+            if (drag_id.length == 1)
+            {
+                mei.Events.publish("CriticalNoteMusic", [drag_id[0]])
+                resetHighlights();
+                drag_id.length = 0;
+            }
+        })
 
         $(window).on('resize', function ()
         {
