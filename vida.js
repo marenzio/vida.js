@@ -285,56 +285,82 @@
         {
             var idx;
             var t = e.target, tx = parseInt(t.getAttribute("x"), 10), ty = parseInt(t.getAttribute("y"), 10);
-            var id = t.parentNode.attributes.id.value;
-            var sysID = t.closest('.system').attributes.id.value;
-            var sysIDs = Object.keys(settings.systemData);
+            //console.log(t);
+            //console.log(t.parentNode)
+            //console.log(t.parentNode.tagName);
+            //console.log(t.parentNode.tagName == "g");
+            //console.log(t.parentNode.getAttribute("class") == null);
 
-            for(idx = 0; idx < sysIDs.length; idx++)
+            // if the clicked item is a note:
+            if (t.parentNode.getAttribute("class") == "note")
             {
-                var curID = sysIDs[idx];
-                if(curID == sysID)
+                var id = t.parentNode.attributes.id.value;
+                var sysID = t.closest('.system').attributes.id.value;
+                var sysIDs = Object.keys(settings.systemData);
+
+                for(idx = 0; idx < sysIDs.length; idx++)
                 {
-                    settings.clickedPage = settings.systemData[curID].pageIdx;
-                    break;
+                   var curID = sysIDs[idx];
+                    if(curID == sysID)
+                    {
+                        settings.clickedPage = settings.systemData[curID].pageIdx;
+                        break;
+                    }
                 }
+
+                if (drag_id.indexOf(id) == -1) // make sure we don't add it twice
+                {
+                    drag_id.unshift( id ); 
+                    newHighlight( "vida-svg-overlay", drag_id[0] );
+                //    console.log("New note: This note was " + id);
+                //    console.log(drag_id);
+                }
+                else {
+                //    console.log("Removing note: This note was " + id + " at position " + drag_id.indexOf(id));
+                   drag_id.splice( drag_id.indexOf(id), 1);
+               //    console.log(drag_id);
+                   removeHighlight("vida-svg-overlay", id);
+               }
+
+                var viewBoxSVG = $(t).closest("svg");
+                var parentSVG = viewBoxSVG.parent().closest("svg")[0];
+                var actualSizeArr = viewBoxSVG[0].getAttribute("viewBox").split(" ");
+                var actualHeight = parseInt(actualSizeArr[2]);
+                var actualWidth = parseInt(actualSizeArr[3]);
+                var svgHeight = parseInt(parentSVG.getAttribute('height'));
+                var svgWidth = parseInt(parentSVG.getAttribute('width'));
+                var pixPerPix = ((actualHeight / svgHeight) + (actualWidth / svgWidth)) / 2;
+
+                drag_start = {
+                    "x": tx, 
+                    "initY": e.pageY, 
+                    "svgY": ty, 
+                    "pixPerPix": pixPerPix //ty / (e.pageY - $("#vida-svg-wrapper")[0].getBoundingClientRect().top)
+                };
+                // we haven't started to drag yet, this might be just a selection
+                dragging = false;
+                $(document).on("mousemove", mouseMoveListener);
+                $(document).on("mouseup", mouseUpListener);
+                $(document).on("touchmove", mouseMoveListener);
+                $(document).on("touchend", mouseUpListener);
+                mei.Events.publish("HighlightSelected", [id])
+                }
+            //else if the clicked item is text:
+            else if (t.parentNode.tagName == "text") {
+                console.log(t.parentNode);
+                console.log(t.parentNode.parentNode);
+                console.log(t.parentNode.parentNode.attributes.id.value);
+                var textID = t.parentNode.parentNode.attributes.id.value
+                $("#" + "vida-svg-wrapper" + " * #" + textID ).css({
+                    "fill": "#ff0000",
+                    "stroke": "#ff0000",
+                    "fill-opacity": "1.0",
+                    "stroke-opacity": "1.0"
+                });
+
+
             }
 
-            if (drag_id.indexOf(id) == -1) // make sure we don't add it twice
-            {
-                drag_id.unshift( id ); 
-                newHighlight( "vida-svg-overlay", drag_id[0] );
-            //    console.log("New note: This note was " + id);
-            //    console.log(drag_id);
-            }
-            else {
-            //    console.log("Removing note: This note was " + id + " at position " + drag_id.indexOf(id));
-                drag_id.splice( drag_id.indexOf(id), 1);
-            //    console.log(drag_id);
-                removeHighlight("vida-svg-overlay", id);
-            }
-
-            var viewBoxSVG = $(t).closest("svg");
-            var parentSVG = viewBoxSVG.parent().closest("svg")[0];
-            var actualSizeArr = viewBoxSVG[0].getAttribute("viewBox").split(" ");
-            var actualHeight = parseInt(actualSizeArr[2]);
-            var actualWidth = parseInt(actualSizeArr[3]);
-            var svgHeight = parseInt(parentSVG.getAttribute('height'));
-            var svgWidth = parseInt(parentSVG.getAttribute('width'));
-            var pixPerPix = ((actualHeight / svgHeight) + (actualWidth / svgWidth)) / 2;
-
-            drag_start = {
-                "x": tx, 
-                "initY": e.pageY, 
-                "svgY": ty, 
-                "pixPerPix": pixPerPix //ty / (e.pageY - $("#vida-svg-wrapper")[0].getBoundingClientRect().top)
-            };
-            // we haven't started to drag yet, this might be just a selection
-            dragging = false;
-            $(document).on("mousemove", mouseMoveListener);
-            $(document).on("mouseup", mouseUpListener);
-            $(document).on("touchmove", mouseMoveListener);
-            $(document).on("touchend", mouseUpListener);
-            mei.Events.publish("HighlightSelected", [id])
         };
 
         var mouseMoveListener = function(e)
@@ -395,7 +421,7 @@
                 pathElems[idx].style.fillOpacity = 0.0;
             }
 
-            $("#vida-svg-overlay * text").remove();
+            //$("#vida-svg-overlay * text").remove();
 
             $("#vida-svg-overlay * .note").on('mousedown', mouseDownListener);
             $("#vida-svg-overlay * .note").on('touchstart', mouseDownListener);
@@ -526,7 +552,6 @@
 
         $(".vida-critical-note-music").on('click', function()
         {
-        //    console.log(drag_id);
             if (drag_id.length == 1)
             {
                 mei.Events.publish("CriticalNoteMusic", [drag_id[0]])
