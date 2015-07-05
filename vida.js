@@ -28,6 +28,7 @@
         var mute = false;
         var editorActive = false;
         var highlighted_cache = [];
+        var lyrics_id = [];
 
         var parser = new DOMParser();
 
@@ -125,16 +126,18 @@
             '<div id="vida-svg-wrapper" class="vida-svg-object" style="z-index: 1; position:absolute;"></div>' +
             '<div id="vida-svg-overlay" class="vida-svg-object" style="z-index: 1; position:absolute;"></div>');
 
+        // Resizing bug - MM
         function resizeComponents()
         {
             $("#vida-svg-wrapper").height(options.parentSelector.height() - $(".vida-page-controls").outerHeight());
-            $("#vida-svg-overlay").height($("#vida-svg-wrapper").height());
+            $("#vida-svg-overlay").height(options.parentSelector.height() - $(".vida-page-controls").outerHeight());
 
             $("#vida-svg-wrapper").offset({'top': $(".vida-page-controls").outerHeight()});
-            $("#vida-svg-overlay").offset($("#vida-svg-wrapper").offset());
+            $("#vida-svg-overlay").offset({'top': $(".vida-page-controls").outerHeight()});
 
             $("#vida-svg-wrapper").width(options.parentSelector.width());
             $("#vida-svg-overlay").width(options.parentSelector.width());
+
         }
 
         function initPopup(text)
@@ -171,6 +174,12 @@
             $("#vida-svg-wrapper").height(options.parentSelector.height() - $(".vida-page-controls").outerHeight());
             $("#vida-svg-wrapper").offset({'top': $(".vida-page-controls").outerHeight()});
             $("#vida-svg-wrapper").width(options.parentSelector.width() * 0.95);
+
+            // Fixed resizing bug - MM
+            $("#vida-svg-overlay").height(options.parentSelector.height() - $(".vida-page-controls").outerHeight());
+            $("#vida-svg-overlay").offset({'top': $(".vida-page-controls").outerHeight()});
+            $("#vida-svg-overlay").width(options.parentSelector.width() * 0.95);
+
             reloadOptions();
 
             if (newData)
@@ -300,7 +309,7 @@
 
                 for(idx = 0; idx < sysIDs.length; idx++)
                 {
-                   var curID = sysIDs[idx];
+                    var curID = sysIDs[idx];
                     if(curID == sysID)
                     {
                         settings.clickedPage = settings.systemData[curID].pageIdx;
@@ -313,7 +322,7 @@
                     drag_id.unshift( id ); 
                     newHighlight( "vida-svg-overlay", drag_id[0] );
                 //    console.log("New note: This note was " + id);
-                //    console.log(drag_id);
+                  //    console.log(drag_id);
                 }
                 else {
                 //    console.log("Removing note: This note was " + id + " at position " + drag_id.indexOf(id));
@@ -345,22 +354,30 @@
                 $(document).on("touchend", mouseUpListener);
                 mei.Events.publish("HighlightSelected", [id])
                 }
+
             //else if the clicked item is text:
             else if (t.parentNode.tagName == "text") {
-                console.log(t.parentNode);
-                console.log(t.parentNode.parentNode);
-                console.log(t.parentNode.parentNode.attributes.id.value);
-                var textID = t.parentNode.parentNode.attributes.id.value
-                $("#" + "vida-svg-wrapper" + " * #" + textID ).css({
-                    "fill": "#ff0000",
-                    "stroke": "#ff0000",
-                    "fill-opacity": "1.0",
-                    "stroke-opacity": "1.0"
-                });
 
+                var syl_id = t.parentNode.parentNode.attributes.id.value;
+                var verse_id = t.parentNode.parentNode.parentNode.attributes.id.value;
+                var sysID = t.closest('.system').attributes.id.value;
+                var sysIDs = Object.keys(settings.systemData);
 
+                if (lyrics_id.indexOf(verse_id) == -1) // make sure we don't add it twice
+                {
+                    lyrics_id.unshift( verse_id ); 
+                    newHighlight( "vida-svg-overlay", syl_id );
+                    //console.log("New note: This note was " + verse_id);
+                    //console.log(lyrics_id);
+                }
+                else {
+                    //console.log("Removing lyric: This note was " + verse_id + " at position " + lyrics_id.indexOf(verse_id));
+                    lyrics_id.splice( lyrics_id.indexOf(verse_id), 1);
+                    //console.log(lyrics_id);
+                    removeHighlight("vida-svg-overlay", syl_id);
+               }
+               mei.Events.publish("HighlightSelected", [verse_id])
             }
-
         };
 
         var mouseMoveListener = function(e)
@@ -399,6 +416,7 @@
                 reloadPage( settings.clickedPage, true );
                 dragging = false; 
                 drag_id.length = 0;
+                lyrics_id.length = 0;
             }
         };
 
@@ -421,8 +439,6 @@
                 pathElems[idx].style.fillOpacity = 0.0;
             }
 
-            //$("#vida-svg-overlay * text").remove();
-
             $("#vida-svg-overlay * .note").on('mousedown', mouseDownListener);
             $("#vida-svg-overlay * .note").on('touchstart', mouseDownListener);
             $("#vida-svg-overlay * defs").append("filter").attr("id", "selector");
@@ -432,8 +448,11 @@
         var syncScroll = function(e)
         {        
             var newTop = $(e.target).scrollTop();
+            var newLeft = $(e.target).scrollLeft(); // MM
             $("#vida-svg-wrapper").scrollTop(newTop);
+            $("#vida-svg-wrapper").scrollLeft(newLeft); // MM
 
+            // MM - do I need to change anything here?
             for(var idx = 0; idx < settings.pageTops.length; idx++)
             {
                 var thisTop = settings.pageTops[idx];
@@ -554,13 +573,22 @@
         {
             if (drag_id.length == 1)
             {
-                mei.Events.publish("CriticalNoteMusic", [drag_id[0]])
+                mei.Events.publish("CriticalNoteMusic", [drag_id[0]]);
                 resetHighlights();
                 drag_id.length = 0;
+                lyrics_id.length = 0;
             }
-        })
+        });
 
-        $(window).on('resize', function ()
+        $(".vida-critical-note-lyric").on('click', function()
+        {
+            mei.Events.publish("CriticalNoteLyrics", [lyrics_id]);
+            resetHighlights();
+            drag_id.length = 0;
+            lyrics_id.length = 0;
+        });
+
+        $(window).on('resize', function()
         {
             // Cancel any previously-set resize timeouts
             clearTimeout(settings.resizeTimer);
