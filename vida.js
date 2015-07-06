@@ -102,6 +102,7 @@
                 case "mei":
                     settings.mei = event.data[1];
                     mei.Events.publish("VerovioUpdated", [settings.mei]);
+                    $(".vida-loading-popup").remove(); // MM - Added to remove popup after resize 
                     break;
 
                 default:
@@ -452,7 +453,7 @@
             $("#vida-svg-wrapper").scrollTop(newTop);
             $("#vida-svg-wrapper").scrollLeft(newLeft); // MM
 
-            // MM - do I need to change anything here?
+            // MM - do I need to add anything here for left/right scroll?
             for(var idx = 0; idx < settings.pageTops.length; idx++)
             {
                 var thisTop = settings.pageTops[idx];
