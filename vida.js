@@ -42,6 +42,25 @@
             return settings.mei;
         };
 
+        // MM - function to get and reset IDS for critical notes
+        this.getHighlightedNote = function()
+        {
+            return drag_id;
+        };
+       
+        this.getHighlightedLyrics = function()
+        {
+            return lyrics_id;
+        };
+
+        this.resetIDArrays = function()
+        {
+            resetHighlights();
+            drag_id.length = 0;
+            lyrics_id.length = 0;
+        };
+
+
         reloadMEI = function()
         {
             settings.verovioWorker.postMessage(['mei']);
@@ -120,8 +139,6 @@
                 '</div>' +
                 //'<div class="vida-grid-toggle">Toggle to grid</div>' +
                 '<div class="vida-orientation-toggle">Toggle orientation</div>' +
-                '<div class="vida-critical-note-music">Add Critical Note (music)</div>' +
-                '<div class="vida-critical-note-lyric">Add Critical Note (lyric)</div>' +
                 '<div class="vida-next-page vida-direction-control"></div>' +
             '</div>' +
             '<div id="vida-svg-wrapper" class="vida-svg-object" style="z-index: 1; position:absolute;"></div>' +
@@ -295,11 +312,6 @@
         {
             var idx;
             var t = e.target, tx = parseInt(t.getAttribute("x"), 10), ty = parseInt(t.getAttribute("y"), 10);
-            //console.log(t);
-            //console.log(t.parentNode)
-            //console.log(t.parentNode.tagName);
-            //console.log(t.parentNode.tagName == "g");
-            //console.log(t.parentNode.getAttribute("class") == null);
 
             // if the clicked item is a note:
             if (t.parentNode.getAttribute("class") == "note")
@@ -322,13 +334,9 @@
                 {
                     drag_id.unshift( id ); 
                     newHighlight( "vida-svg-overlay", drag_id[0] );
-                //    console.log("New note: This note was " + id);
-                  //    console.log(drag_id);
                 }
                 else {
-                //    console.log("Removing note: This note was " + id + " at position " + drag_id.indexOf(id));
                    drag_id.splice( drag_id.indexOf(id), 1);
-               //    console.log(drag_id);
                    removeHighlight("vida-svg-overlay", id);
                }
 
@@ -368,13 +376,9 @@
                 {
                     lyrics_id.unshift( verse_id ); 
                     newHighlight( "vida-svg-overlay", syl_id );
-                    //console.log("New note: This note was " + verse_id);
-                    //console.log(lyrics_id);
                 }
                 else {
-                    //console.log("Removing lyric: This note was " + verse_id + " at position " + lyrics_id.indexOf(verse_id));
                     lyrics_id.splice( lyrics_id.indexOf(verse_id), 1);
-                    //console.log(lyrics_id);
                     removeHighlight("vida-svg-overlay", syl_id);
                }
                mei.Events.publish("HighlightSelected", [verse_id])
@@ -568,25 +572,6 @@
             {
                 $(".vida-zoom-in").css('visibility', 'visible');
             }
-        });
-
-        $(".vida-critical-note-music").on('click', function()
-        {
-            if (drag_id.length == 1)
-            {
-                mei.Events.publish("CriticalNoteMusic", [drag_id[0]]);
-                resetHighlights();
-                drag_id.length = 0;
-                lyrics_id.length = 0;
-            }
-        });
-
-        $(".vida-critical-note-lyric").on('click', function()
-        {
-            mei.Events.publish("CriticalNoteLyrics", [lyrics_id]);
-            resetHighlights();
-            drag_id.length = 0;
-            lyrics_id.length = 0;
         });
 
         $(window).on('resize', function()
