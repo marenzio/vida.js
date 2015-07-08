@@ -65,7 +65,7 @@ this.addEventListener('message', function(event){
             break;
 
         case "mei":
-            var mei = vrvToolkit.getMEI();
+            var mei = vrvToolkit.getMEI(0, 1);
             postMessage(["mei", mei]);
             break;
 
