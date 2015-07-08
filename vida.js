@@ -42,7 +42,6 @@
             return settings.mei;
         };
 
-        // MM - function to get and reset IDS for critical notes
         this.getHighlightedNote = function()
         {
             return drag_id;
@@ -121,7 +120,7 @@
                 case "mei":
                     settings.mei = event.data[1];
                     mei.Events.publish("VerovioUpdated", [settings.mei]);
-                    $(".vida-loading-popup").remove(); // MM - Added to remove popup after resize 
+                    $(".vida-loading-popup").remove();
                     break;
 
                 default:
@@ -144,7 +143,6 @@
             '<div id="vida-svg-wrapper" class="vida-svg-object" style="z-index: 1; position:absolute;"></div>' +
             '<div id="vida-svg-overlay" class="vida-svg-object" style="z-index: 1; position:absolute;"></div>');
 
-        // Resizing bug - MM
         function resizeComponents()
         {
             $("#vida-svg-wrapper").height(options.parentSelector.height() - $(".vida-page-controls").outerHeight());
@@ -193,7 +191,6 @@
             $("#vida-svg-wrapper").offset({'top': $(".vida-page-controls").outerHeight()});
             $("#vida-svg-wrapper").width(options.parentSelector.width() * 0.95);
 
-            // Fixed resizing bug - MM
             $("#vida-svg-overlay").height(options.parentSelector.height() - $(".vida-page-controls").outerHeight());
             $("#vida-svg-overlay").offset({'top': $(".vida-page-controls").outerHeight()});
             $("#vida-svg-overlay").width(options.parentSelector.width() * 0.95);
@@ -335,10 +332,11 @@
                     drag_id.unshift( id ); 
                     newHighlight( "vida-svg-overlay", drag_id[0] );
                 }
-                else {
-                   drag_id.splice( drag_id.indexOf(id), 1);
-                   removeHighlight("vida-svg-overlay", id);
-               }
+                else
+                {
+                    drag_id.splice( drag_id.indexOf(id), 1);
+                    removeHighlight("vida-svg-overlay", id);
+                }
 
                 var viewBoxSVG = $(t).closest("svg");
                 var parentSVG = viewBoxSVG.parent().closest("svg")[0];
@@ -362,13 +360,12 @@
                 $(document).on("touchmove", mouseMoveListener);
                 $(document).on("touchend", mouseUpListener);
                 mei.Events.publish("HighlightSelected", [id])
-                }
+            }
 
             //else if the clicked item is text:
             else if (t.parentNode.tagName == "text") {
-
-                var syl_id = t.parentNode.parentNode.attributes.id.value;
-                var verse_id = t.parentNode.parentNode.parentNode.attributes.id.value;
+                var syl_id = t.closest(".syl").attributes.id.value 
+                var verse_id = t.closest(".verse").attributes.id.value 
                 var sysID = t.closest('.system').attributes.id.value;
                 var sysIDs = Object.keys(settings.systemData);
 
@@ -453,11 +450,10 @@
         var syncScroll = function(e)
         {        
             var newTop = $(e.target).scrollTop();
-            var newLeft = $(e.target).scrollLeft(); // MM
+            var newLeft = $(e.target).scrollLeft();
             $("#vida-svg-wrapper").scrollTop(newTop);
-            $("#vida-svg-wrapper").scrollLeft(newLeft); // MM
+            $("#vida-svg-wrapper").scrollLeft(newLeft);
 
-            // MM - do I need to add anything here for left/right scroll?
             for(var idx = 0; idx < settings.pageTops.length; idx++)
             {
                 var thisTop = settings.pageTops[idx];
