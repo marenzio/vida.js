@@ -137,7 +137,7 @@
                     '<span class="vida-zoom-out"></span>' +
                 '</div>' +
                 //'<div class="vida-grid-toggle">Toggle to grid</div>' +
-                '<div class="vida-orientation-toggle">Toggle orientation</div>' +
+           //     '<div class="vida-orientation-toggle">Toggle orientation</div>' +
                 '<div class="vida-next-page vida-direction-control"></div>' +
             '</div>' +
             '<div id="vida-svg-wrapper" class="vida-svg-object" style="z-index: 1; position:absolute;"></div>' +
@@ -227,7 +227,7 @@
             reloadOptions();
             refreshVerovio();
         };
-
+        /*
         this.toggleOrientation = function()
         {
             if(settings.horizontallyOriented === 1)
@@ -242,7 +242,7 @@
             }
             refreshVerovio();
         };
-
+        */
         this.edit = function(editorAction)
         {
             settings.verovioWorker.postMessage(['edit', editorAction]);
@@ -514,7 +514,7 @@
             $("#vida-svg-wrapper").html("<h4 id='loadText'>Load a file into Verovio!</h4>");
         }
 
-        $(".vida-orientation-toggle").on('click', this.toggleOrientation);
+//        $(".vida-orientation-toggle").on('click', this.toggleOrientation);
 
         $(".vida-grid-toggle").on('click', this.toggleGrid);
 
