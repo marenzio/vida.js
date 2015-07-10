@@ -86,11 +86,11 @@
                             settings.systemData[systems[sIdx].id] = {
                                 'topOffset': systems[sIdx].getBoundingClientRect().top - vidaOffset - settings.border,
                                 'pageIdx': pIdx
-                            };   
+                            };
                         }
                     }
 
-                    create_overlay( 0 );  
+                    create_overlay( 0 );
                     $(".vida-loading-popup").remove();
                     break;
 
@@ -181,6 +181,7 @@
             })]);
         }
 
+        // Note to self: zoom issue is in loadData vs redoLayout
         function refreshVerovio(newData)
         {
             if(newData) settings.mei = newData;

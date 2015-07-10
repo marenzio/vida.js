@@ -46,6 +46,19 @@ this.addEventListener('message', function(event){
 
         case "redoLayout":
             vrvToolkit.redoLayout();
+
+            var totalPages = vrvToolkit.getPageCount();
+            postMessage(["returnPageCount", totalPages]);
+
+            var svgText = "";
+    
+            for(var curPage = 1; curPage <= totalPages; curPage++)
+            {
+                svgText += vrvToolkit.renderPage(curPage);
+            }
+
+            postMessage(["meconium", svgText]);
+
             //more to do?
             break;
 
