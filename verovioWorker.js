@@ -3,7 +3,7 @@ var vrvToolkit = new verovio.toolkit();
 
 var initialLoad = function(data)
 {
-    vrvToolkit.loadData(data);
+    if (data) vrvToolkit.loadData(data);
 
     var totalPages = vrvToolkit.getPageCount();
     postMessage(["returnPageCount", totalPages]);
@@ -46,19 +46,7 @@ this.addEventListener('message', function(event){
 
         case "redoLayout":
             vrvToolkit.redoLayout();
-
-            var totalPages = vrvToolkit.getPageCount();
-            postMessage(["returnPageCount", totalPages]);
-
-            var svgText = "";
-    
-            for(var curPage = 1; curPage <= totalPages; curPage++)
-            {
-                svgText += vrvToolkit.renderPage(curPage);
-            }
-
-            postMessage(["meconium", svgText]);
-
+            initialLoad();
             //more to do?
             break;
 

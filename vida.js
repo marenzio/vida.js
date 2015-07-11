@@ -311,7 +311,12 @@
             var idx;
             var t = e.target, tx = parseInt(t.getAttribute("x"), 10), ty = parseInt(t.getAttribute("y"), 10);
 
+            //console.log(t);
+            //console.log(t.parentNode);
+            //console.log(settings.svg);
+
             // if the clicked item is a note:
+            // MM - maybe try "use" class here, and "tspan" below.  You might not need parentNode call.
             if (t.parentNode.getAttribute("class") == "note")
             {
                 var id = t.parentNode.attributes.id.value;
@@ -355,16 +360,18 @@
                     "pixPerPix": pixPerPix //ty / (e.pageY - $("#vida-svg-wrapper")[0].getBoundingClientRect().top)
                 };
                 // we haven't started to drag yet, this might be just a selection
-                dragging = false;
-                $(document).on("mousemove", mouseMoveListener);
-                $(document).on("mouseup", mouseUpListener);
-                $(document).on("touchmove", mouseMoveListener);
-                $(document).on("touchend", mouseUpListener);
+                // To ENABLE dragging, uncomment the following five lines
+//                dragging = false;
+//                $(document).on("mousemove", mouseMoveListener);
+//                $(document).on("mouseup", mouseUpListener);
+//                $(document).on("touchmove", mouseMoveListener);
+//                $(document).on("touchend", mouseUpListener);
                 mei.Events.publish("HighlightSelected", [id])
             }
 
             //else if the clicked item is text:
             else if (t.parentNode.tagName == "text") {
+            //else if (t.tagName == "tspan") {
                 var syl_id = t.closest(".syl").attributes.id.value 
                 var verse_id = t.closest(".verse").attributes.id.value 
                 var sysID = t.closest('.system').attributes.id.value;
