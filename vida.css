@@ -7,8 +7,7 @@
 }
 
 #vida-svg-overlay{
-    overflow:scroll;
-    overflow-x:auto;
+    overflow:auto;
 }
 
 #vida-svg-wrapper{

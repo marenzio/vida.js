@@ -1,6 +1,21 @@
 importScripts("verovio-toolkit-webworker.js");
 var vrvToolkit = new verovio.toolkit();
 
+var loadData = function(data)
+{
+    vrvToolkit.loadData(data);
+    var totalPages = vrvToolkit.getPageCount();
+    postMessage(["returnPageCount", totalPages]);
+}
+
+var loadPage = function(pageIndex)
+{
+    var svgText = vrvToolkit.renderPage(pageIndex, "");
+    var totalPages = vrvToolkit.getPageCount();
+
+    postMessage(["loadedPage", pageIndex, svgText, totalPages]);
+}
+
 var initialLoad = function(data)
 {
     if (data) vrvToolkit.loadData(data);
@@ -8,11 +23,11 @@ var initialLoad = function(data)
     var totalPages = vrvToolkit.getPageCount();
     postMessage(["returnPageCount", totalPages]);
 
-    var svgText = "";
+    var svgText = [];
     
     for(var curPage = 1; curPage <= totalPages; curPage++)
     {
-        svgText += vrvToolkit.renderPage(curPage);
+        svgText.push(vrvToolkit.renderPage(curPage));
         postMessage(["renderedPage", curPage])
     }
 
@@ -46,7 +61,9 @@ this.addEventListener('message', function(event){
 
         case "redoLayout":
             vrvToolkit.redoLayout();
-            initialLoad();
+//            initialLoad();
+            newPage = vrvToolkit.getPageWithElement(event.data[1])
+            loadPage(newPage);
             //more to do?
             break;
 
@@ -55,7 +72,14 @@ this.addEventListener('message', function(event){
             break;
 
         case "loadData":
-            initialLoad(event.data[1]);
+        //    initialLoad(event.data[1]);
+            loadData(event.data[1]);
+            loadPage(1);
+            break;
+
+        case "loadPage":
+            var page = event.data[1];
+            loadPage(page);
             break;
 
         case "edit":

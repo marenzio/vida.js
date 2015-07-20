@@ -2,6 +2,10 @@
 {
     var vida = function(element, options)
     {
+        var vrvToolkit = new verovio.toolkit();
+
+        // MM - what can be removed here: horizontallyOriented, pageTops, systemData
+        // Make default currentPage = 1?
         var settings = {
             border: 50,
             clickedPage: undefined,
@@ -18,9 +22,10 @@
             svg: "",
             systemData: {}, //systemID: {'topOffset': offset, 'pageIdx'': pageidx}
             totalPages: 0,
-            verovioWorker: new Worker("vida.js/verovioWorker.js")
+ //           verovioWorker: new Worker("vida.js/verovioWorker.js")
         };
 
+        // MM - change "drag_id to note_id or something; dragging no longer enabled"
         var drag_id = [];
         var drag_start;
         var dragging;
@@ -30,7 +35,7 @@
         var highlighted_cache = [];
         var lyrics_id = [];
 
-        var parser = new DOMParser();
+        var parser = new DOMParser();  // MM - I think this can be removed
 
         this.getSVG = function()
         {
@@ -62,72 +67,11 @@
 
         reloadMEI = function()
         {
-            settings.verovioWorker.postMessage(['mei']);
+            settings.mei = vrvToolkit.getMEI(0, 1);
+            mei.Events.publish("VerovioUpdated", [settings.mei]);
         };
 
         $.extend(settings, options);
-
-        settings.verovioWorker.onmessage = function(event){
-            switch (event.data[0]){
-                case "meconium":
-                    $("#vida-svg-overlay").html(""); //clear this so all its systems disappear
-                    $("#vida-svg-wrapper").html(event.data[1]);
-                    settings.svg = event.data[1];
-
-                    var vidaOffset = $("#vida-svg-wrapper").offset().top;
-                    var pages = document.getElementById("vida-svg-wrapper").children;
-
-                    for(var pIdx = 0; pIdx < pages.length; pIdx++)
-                    {
-                        settings.pageTops[pIdx] = pages[pIdx].getBoundingClientRect().top;
-                        var systems = pages[pIdx].querySelectorAll('g[class=system]');
-                        for(var sIdx = 0; sIdx < systems.length; sIdx++) 
-                        {
-                            settings.systemData[systems[sIdx].id] = {
-                                'topOffset': systems[sIdx].getBoundingClientRect().top - vidaOffset - settings.border,
-                                'pageIdx': pIdx
-                            };
-                        }
-                    }
-
-                    create_overlay( 0 );
-                    $(".vida-loading-popup").remove();
-                    break;
-
-                case "renderedPage":
-                    //console.log("Rendered page", event.data[1], "internally.");
-                    break;
-
-                case "returnPage":
-                    var this_page = event.data[1];
-                    var this_svg = event.data[2];
-
-                    var parsedDoc = parser.parseFromString(this_svg, "text/xml");
-                    var thisChild = document.getElementById("vida-svg-wrapper").children[this_page];
-                    document.getElementById("vida-svg-wrapper").replaceChild(parsedDoc.firstChild, thisChild);
-
-                    settings.svg = $("#vida-svg-wrapper").html();
-
-                    if(event.data[3]) create_overlay( 0 );
-                    $(".vida-loading-popup").remove();
-                    reapplyHighlights();
-                    break;
-
-                case "returnPageCount":
-                    settings.totalPages = event.data[1];
-                    break;
-
-                case "mei":
-                    settings.mei = event.data[1];
-                    mei.Events.publish("VerovioUpdated", [settings.mei]);
-                    $(".vida-loading-popup").remove();
-                    break;
-
-                default:
-                    console.log("Message from Verovio of type", event.data[0]+":", event.data[1]);
-                    break;
-            }
-        };
 
         $(element).append(
             '<div class="vida-page-controls">' +
@@ -136,8 +80,6 @@
                     '<span class="vida-zoom-in"></span>' +
                     '<span class="vida-zoom-out"></span>' +
                 '</div>' +
-                //'<div class="vida-grid-toggle">Toggle to grid</div>' +
-           //     '<div class="vida-orientation-toggle">Toggle orientation</div>' +
                 '<div class="vida-next-page vida-direction-control"></div>' +
             '</div>' +
             '<div id="vida-svg-wrapper" class="vida-svg-object" style="z-index: 1; position:absolute;"></div>' +
@@ -148,12 +90,12 @@
             $("#vida-svg-wrapper").height(options.parentSelector.height() - $(".vida-page-controls").outerHeight());
             $("#vida-svg-overlay").height(options.parentSelector.height() - $(".vida-page-controls").outerHeight());
 
-            $("#vida-svg-wrapper").offset({'top': $(".vida-page-controls").outerHeight()});
-            $("#vida-svg-overlay").offset({'top': $(".vida-page-controls").outerHeight()});
+            // MM - do I need these lines now that scrolling is gone?
+          //  $("#vida-svg-wrapper").offset({'top': $(".vida-page-controls").outerHeight()});
+          //  $("#vida-svg-overlay").offset({'top': $(".vida-page-controls").outerHeight()});
 
             $("#vida-svg-wrapper").width(options.parentSelector.width());
             $("#vida-svg-overlay").width(options.parentSelector.width());
-
         }
 
         function initPopup(text)
@@ -168,8 +110,8 @@
         function reloadOptions()
         {
             settings.pageHeight = Math.max($("#vida-svg-wrapper").height() * (100 / settings.scale) - settings.border, 100); // minimal value required by Verovio
-            settings.pageWidth = Math.max($("#vida-svg-wrapper").width() * (100 / settings.scale) - settings.border, 100); // idem     
-            settings.verovioWorker.postMessage(['setOptions', JSON.stringify({
+            settings.pageWidth = Math.max($("#vida-svg-wrapper").width() * (100 / settings.scale) - settings.border, 100); // idem 
+            vrvToolkit.setOptions(JSON.stringify({
                 pageHeight: settings.pageHeight,
                 pageWidth: settings.pageWidth,
                 inputFormat: 'mei',
@@ -178,44 +120,46 @@
                 noLayout: settings.horizontallyOriented,
                 ignoreLayout: settings.ignoreLayout,
                 border: settings.border
-            })]);
+            }));
         }
 
-        // Note to self: zoom issue is in loadData vs redoLayout
         function refreshVerovio(newData)
         {
             if(newData) settings.mei = newData;
             if(!settings.mei) return;
             $("#loadText").remove();
             initPopup("Loading...");
-            $("#vida-svg-wrapper").height(options.parentSelector.height() - $(".vida-page-controls").outerHeight());
-            $("#vida-svg-wrapper").offset({'top': $(".vida-page-controls").outerHeight()});
-            $("#vida-svg-wrapper").width(options.parentSelector.width() * 0.95);
-
-            $("#vida-svg-overlay").height(options.parentSelector.height() - $(".vida-page-controls").outerHeight());
-            $("#vida-svg-overlay").offset({'top': $(".vida-page-controls").outerHeight()});
-            $("#vida-svg-overlay").width(options.parentSelector.width() * 0.95);
 
             reloadOptions();
 
-            if (newData)
+            if (newData)  // if completely new data is being loaded:
             {
-                settings.verovioWorker.postMessage(['loadData', newData + "\n"]); 
+                loadData(newData + "\n");
+                loadPage(1);
+                reloadMEI();
             }
-            else
+            else  // else we are redoing the layout (zoom)
             {
-                settings.verovioWorker.postMessage(['redoLayout']);
+                vrvToolkit.redoLayout();
+                var referenceID = document.querySelector("#vida-svg-wrapper * .measure").id;
+                var newPage = vrvToolkit.getPageWithElement(referenceID);
+                loadPage(newPage);
             }
-
-            checkNavIcons();
-            reloadMEI();
+            $(".vida-loading-popup").remove();
         }
 
+        // MM - what is the difference between loadPage and reloadPage?
+        // I think this was the case in Laurent's meiEditor as well - ask him
         function reloadPage(pageIdx, initOverlay)
         {
             initPopup("Reloading...");
             reloadMEI();
-            settings.verovioWorker.postMessage(['renderPage', pageIdx, initOverlay]);
+
+            settings.svg = vrvToolkit.renderPage(pageIdx, "");
+
+            if(initOverlay) create_overlay( 0 );
+            $(".vida-loading-popup").remove();
+            reapplyHighlights();
         }
 
         this.changeMusic = function(newData)
@@ -223,30 +167,19 @@
             refreshVerovio(newData);
         };
 
+        // MM - Is this function necessary?
         this.reloadPanel = function()
         {            
             reloadOptions();
             refreshVerovio();
         };
-        /*
-        this.toggleOrientation = function()
-        {
-            if(settings.horizontallyOriented === 1)
-            {
-                settings.horizontallyOriented = 0;
-                $('.vida-direction-control').show();
-            }
-            else
-            {
-                settings.horizontallyOriented = 1;
-                $('.vida-direction-control').hide();
-            }
-            refreshVerovio();
-        };
-        */
+
+        // MM - is this function actually used?  Go ahead and perform action here?
+        // The webworker implementation was not complete
         this.edit = function(editorAction)
         {
-            settings.verovioWorker.postMessage(['edit', editorAction]);
+            var res = vrvToolkit.edit(editorAction);
+            loadPage(settings.currentPage);
         };
 
         function newHighlight(div, id) 
@@ -306,17 +239,35 @@
             }
         }
 
+        var loadData = function(data)
+        {
+            vrvToolkit.loadData(data);
+            //MM - set totalPages in refreshVerovio?  See loadPage() as well
+            settings.totalPages = vrvToolkit.getPageCount();
+        }
+
+        var loadPage = function(pageIndex)
+        {
+            settings.currentPage = pageIndex;
+            settings.svg = vrvToolkit.renderPage(pageIndex, "");
+            settings.totalPages = vrvToolkit.getPageCount();
+
+            $("#vida-svg-overlay").html(""); //clear this so all its systems disappear
+            $("#vida-svg-wrapper").html(settings.svg);
+
+            create_overlay( 0 );
+
+            checkNavIcons();
+            reapplyHighlights();
+        }
+
         var mouseDownListener = function(e)
         {
             var idx;
             var t = e.target, tx = parseInt(t.getAttribute("x"), 10), ty = parseInt(t.getAttribute("y"), 10);
 
-            //console.log(t);
-            //console.log(t.parentNode);
-            //console.log(settings.svg);
 
             // if the clicked item is a note:
-            // MM - maybe try "use" class here, and "tspan" below.  You might not need parentNode call.
             if (t.parentNode.getAttribute("class") == "note")
             {
                 var id = t.parentNode.attributes.id.value;
@@ -359,19 +310,19 @@
                     "svgY": ty, 
                     "pixPerPix": pixPerPix //ty / (e.pageY - $("#vida-svg-wrapper")[0].getBoundingClientRect().top)
                 };
-                // we haven't started to drag yet, this might be just a selection
+
                 // To ENABLE dragging, uncomment the following five lines
-//                dragging = false;
+//                dragging = false;  // we haven't started to drag yet, this might be just a selection
 //                $(document).on("mousemove", mouseMoveListener);
 //                $(document).on("mouseup", mouseUpListener);
 //                $(document).on("touchmove", mouseMoveListener);
 //                $(document).on("touchend", mouseUpListener);
+
                 mei.Events.publish("HighlightSelected", [id])
             }
 
             //else if the clicked item is text:
             else if (t.parentNode.tagName == "text") {
-            //else if (t.tagName == "tspan") {
                 var syl_id = t.closest(".syl").attributes.id.value 
                 var verse_id = t.closest(".verse").attributes.id.value 
                 var sysID = t.closest('.system').attributes.id.value;
@@ -407,7 +358,14 @@
                 y: parseInt(scaledY) }   
             });
 
-            settings.verovioWorker.postMessage(['edit', editorAction, settings.clickedPage, false]); 
+            // MM - double check all of this after turning on dragging
+            var res = vrvToolkit.edit(editorAction);
+            settings.svg = vrvToolkit.renderPage(settings.clickedPage, "");
+
+            if(initOverlay) create_overlay( 0 );
+            $(".vida-loading-popup").remove();
+            reapplyHighlights();
+
             removeHighlight( "vida-svg-overlay", drag_id[0] );
             resetHighlights(); 
             newHighlight( "vida-svg-wrapper", drag_id[0] ); 
@@ -462,6 +420,7 @@
             $("#vida-svg-wrapper").scrollTop(newTop);
             $("#vida-svg-wrapper").scrollLeft(newLeft);
 
+            // MM - do I need this anymore?
             for(var idx = 0; idx < settings.pageTops.length; idx++)
             {
                 var thisTop = settings.pageTops[idx];
@@ -475,17 +434,17 @@
 
             checkNavIcons();
         };
-
+/*
         var scrollToPage = function(pageNumber)
         {
             $("#vida-svg-overlay").scrollTop(settings.pageTops[pageNumber]);
             checkNavIcons();
         };
-
+*/
         //updates nav icon displays
         var checkNavIcons = function()
         {
-            if(settings.currentPage === settings.totalPages - 1)
+            if(settings.currentPage === settings.totalPages)
             {
                 $(".vida-next-page").css('visibility', 'hidden');
             }
@@ -494,7 +453,7 @@
                 $(".vida-next-page").css('visibility', 'visible');
             }            
 
-            if(settings.currentPage === 0)
+            if(settings.currentPage === 1)
             {
                 $(".vida-prev-page").css('visibility', 'hidden');
             }
@@ -522,24 +481,40 @@
             $("#vida-svg-wrapper").html("<h4 id='loadText'>Load a file into Verovio!</h4>");
         }
 
-//        $(".vida-orientation-toggle").on('click', this.toggleOrientation);
-
         $(".vida-grid-toggle").on('click', this.toggleGrid);
 
-        $(".vida-next-page").on('click', function()
+/*        $(".vida-next-page").on('click', function()
         {
             if (settings.currentPage < settings.totalPages - 1)
             {
                 scrollToPage(settings.currentPage + 1);
             }
         });
+*/
+        $(".vida-next-page").on('click', function()
+        {
+            if (settings.currentPage < settings.totalPages)
+            {
+                settings.currentPage += 1;
+                loadPage(settings.currentPage);
+            }
+        });
 
-        $(".vida-prev-page").on('click', function()
+/*        $(".vida-prev-page").on('click', function()
         {
             if (settings.currentPage > 0)
             {
                 scrollToPage(settings.currentPage - 1);
             }
+        });
+*/
+        $(".vida-prev-page").on('click', function()
+        {
+            if (settings.currentPage > 1)
+            {
+                settings.currentPage -= 1;
+                loadPage(settings.currentPage);
+            }         
         });
 
         $("#vida-svg-overlay").on('scroll', syncScroll);
